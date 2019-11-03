@@ -1,0 +1,38 @@
+From 3b7f27ab20c8033633499b61342ffcd32a1deb0c Mon Sep 17 00:00:00 2001
+From: Lukas Holecek <hluk@email.cz>
+Date: Mon, 18 Nov 2019 15:30:43 +0100
+Subject: [PATCH] Fix lambda captures for SnoreToast process
+
+Signed-off-by: Lukas Holecek <hluk@email.cz>
+---
+ src/notifybysnore.cpp | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/src/notifybysnore.cpp b/src/notifybysnore.cpp
+index a8ea09c..708fcab 100644
+--- a/src/notifybysnore.cpp
++++ b/src/notifybysnore.cpp
+@@ -183,15 +183,16 @@ void NotifyBySnore::notifyDeferred(KNotification* notification)
+     qCDebug(LOG_KNOTIFICATIONS) << arguments;
+     proc->start(m_program, arguments);
+     m_notifications.insert(notification->id(), notification);
++    QPointer<KNotification> safeNotification(notification);
+     connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+-            [=](int exitCode, QProcess::ExitStatus exitStatus){
++            this, [=](int exitCode, QProcess::ExitStatus exitStatus){
+                 proc->deleteLater();
+                 if (exitStatus != QProcess::NormalExit) {
+                     qCDebug(LOG_KNOTIFICATIONS) << "SnoreToast crashed while trying to show a notification.";
+-                    close(notification);
++                    if (safeNotification)
++                        close(safeNotification.data());
+                 }
+-                QFile::remove(QString(m_iconDir.path() + QLatin1Char('/')
+-                            + QString::number(notification->id()) + QStringLiteral(".png")));
++                QFile::remove(iconPath);
+     });
+ }
+ 
+-- 
+2.23.0
+

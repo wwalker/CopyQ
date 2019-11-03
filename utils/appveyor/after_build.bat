@@ -14,6 +14,11 @@ set Build=%BuildRoot%\%BUILD_SUB_DIR%
 set BuildPlugins=%BuildRoot%\plugins\%BUILD_SUB_DIR%
 
 mkdir "%Destination%"
+
+dir /s %QTDIR%\bin\
+xcopy /F "%QTDIR%\bin\*KF5*.dll" "%Destination%" || goto :error
+xcopy /F "%QTDIR%\bin\snoretoast.exe" "%Destination%" || goto :error
+
 xcopy /F "%Build%\copyq.exe" "%Destination%" || goto :error
 
 xcopy /F "%Source%\AUTHORS" "%Destination%" || goto :error
@@ -35,6 +40,9 @@ xcopy /F "%BuildPlugins%\*.dll" "%Destination%\plugins" || goto :error
 
 choco install -y InnoSetup || goto :error
 "C:\ProgramData\chocolatey\bin\ISCC.exe" "/O%APPVEYOR_BUILD_FOLDER%" "/DAppVersion=%AppVersion%" "/DRoot=%Destination%" "/DSource=%Source%" "%Source%\Shared\copyq.iss" || goto :error
+
+call setx PATH "%%PATH:%QTDIR%=%%"
+echo "%PATH%"
 
 set QT_FORCE_STDERR_LOGGING=1
 set COPYQ_TESTS_RERUN_FAILED=1
