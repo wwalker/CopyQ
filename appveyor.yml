@@ -6,13 +6,9 @@ image:
 
 environment:
   matrix:
-    - QTDIR: C:\Qt\5.13\mingw73_32
+    - QTDIR: C:\Qt\5.9\mingw53_32
       CMAKE_GENERATOR: MinGW Makefiles
-      MINGW_PATH: C:\Qt\Tools\mingw730_32
-
-    - QTDIR: C:\Qt\5.13\mingw73_64
-      CMAKE_GENERATOR: MinGW Makefiles
-      MINGW_PATH: C:\Qt\Tools\mingw730_64
+      MINGW_PATH: C:\Qt\Tools\mingw530_32
 
 # Parameters for default build commands (build_script is used instead).
 build:
