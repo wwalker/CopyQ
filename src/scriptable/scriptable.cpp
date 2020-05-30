@@ -595,6 +595,7 @@ void installObject(QObject *fromObj, const QString &toName, QJSEngine *engine)
                 "%3.%1 = function() {"
                 "_copyqArguments = arguments;"
                 "var v = %2.%1();"
+                "delete _copyqArguments;"
                 "if (_copyqHasUncaughtException) throw _copyqUncaughtException;"
                 + returnStatement +
                 "};\n"
@@ -625,7 +626,6 @@ Scriptable::Scriptable(
     , m_input()
 {
     QJSValue globalObject = m_engine->globalObject();
-    globalObject.setProperty("_copyqArguments", m_engine->newArray());
     globalObject.setProperty("global", globalObject);
 
     m_safeCall = evaluateStrict(m_engine,
