@@ -627,6 +627,21 @@ Scriptable::Scriptable(
     QJSValue globalObject = m_engine->globalObject();
     globalObject.setProperty("_copyqArguments", m_engine->newArray());
     globalObject.setProperty("global", globalObject);
+
+    m_safeCall = evaluateStrict(m_engine,
+        "_copyqSafeCall = function() {"
+        "try {return this.apply(global, arguments);}"
+        "catch(e) {_copyqUncaughtException = e; throw e;}"
+        "}"
+    );
+    m_safeEval = evaluateStrict(m_engine,
+        "_copyqUnsafeEval = eval;"
+        "_copyqSafeEval = function(script) {"
+        "try {return _copyqUnsafeEval(script);}"
+        "catch(e) {_copyqUncaughtException = e; throw e;}"
+        "}"
+    );
+
     installObject(this, "global", m_engine);
 
     addScriptableClass(&ScriptableByteArray::staticMetaObject, "ByteArray", m_engine);
@@ -828,16 +843,10 @@ QJSValue Scriptable::call(const QString &label, QJSValue *fn, const QVariantList
 
 QJSValue Scriptable::call(const QString &label, QJSValue *fn, const QJSValueList &arguments)
 {
-    auto globalObject = engine()->globalObject();
-    globalObject.setProperty( "_copyqArguments", toScriptValue(arguments, this) );
-    globalObject.setProperty("_copyqFn", *fn);
-
-    const auto result = eval("_copyqFn.apply(this, _copyqArguments)", label);
-
-    globalObject.deleteProperty("_copyqFn");
-    globalObject.deleteProperty("_copyqArguments");
-
-    return result;
+    m_stack.append(label);
+    const auto v = m_safeCall.callWithInstance(*fn, arguments);
+    m_stack.pop_back();
+    return v;
 }
 
 QJSValue Scriptable::version()
@@ -3053,13 +3062,9 @@ QJSValue Scriptable::screenshot(bool select)
 
 QJSValue Scriptable::eval(const QString &script, const QString &fileName)
 {
-    const QString script2 = QString(
-        "try {\n%1\n;}"
-        "catch(e) {_copyqUncaughtException = e; throw e;}"
-    ).arg(script);
-
     m_stack.append(fileName);
-    const auto result = engine()->evaluate(script2, fileName);
+    const auto arguments = QJSValueList() << toScriptValue(script, this);
+    const auto result = m_safeEval.call(arguments);
     m_stack.pop_back();
 
     if (m_abort != Abort::None) {

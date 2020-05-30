@@ -462,6 +462,9 @@ private:
 
     QStringList m_stack;
     QStringList m_uncaughtExceptionStack;
+
+    QJSValue m_safeCall;
+    QJSValue m_safeEval;
 };
 
 class NetworkReply final : public QObject {
