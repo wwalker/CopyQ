@@ -1966,21 +1966,25 @@ QJSValue Scriptable::fromBase64()
 
 QJSValue Scriptable::md5sum()
 {
+    m_skipArguments = 1;
     return checksumForArgument(this, QCryptographicHash::Md5);
 }
 
 QJSValue Scriptable::sha1sum()
 {
+    m_skipArguments = 1;
     return checksumForArgument(this, QCryptographicHash::Sha1);
 }
 
 QJSValue Scriptable::sha256sum()
 {
+    m_skipArguments = 1;
     return checksumForArgument(this, QCryptographicHash::Sha256);
 }
 
 QJSValue Scriptable::sha512sum()
 {
+    m_skipArguments = 1;
     return checksumForArgument(this, QCryptographicHash::Sha512);
 }
 
