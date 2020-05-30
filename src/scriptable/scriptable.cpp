@@ -585,21 +585,13 @@ void installObject(QObject *fromObj, const QString &toName, QJSEngine *engine)
                 continue;
 
             const auto slot = metaObject->method(j);
-            const QString returnStatement = ( slot.returnType() == QMetaType::QByteArray )
-                ? "return ByteArray(v);"
-                : "return v;";
+            const bool hasByteArrayReturnType = slot.returnType() == QMetaType::QByteArray;
 
             // Allow passing variable number of arguments to scriptable methods
             // and handle exceptions.
-            script.append( QString(
-                "%3.%1 = function() {"
-                "_copyqArguments = arguments;"
-                "var v = %2.%1();"
-                "delete _copyqArguments;"
-                "if (_copyqHasUncaughtException) throw _copyqUncaughtException;"
-                + returnStatement +
-                "};\n"
-            ).arg(name, fromName, toName) );
+            script.append(
+                QString("%3.%1 = _copyqFnWrapper(%2.%1, %4);\n")
+                        .arg(name, fromName, toName, hasByteArrayReturnType ? "true" : "false") );
         } else {
             const QMetaProperty prop = metaObject->property(i);
             script.append( QString("Object.defineProperty(%2, '%1', {").arg(name, toName) );
@@ -639,6 +631,18 @@ Scriptable::Scriptable(
         "_copyqSafeEval = function(script) {"
         "try {return _copyqUnsafeEval(script);}"
         "catch(e) {_copyqUncaughtException = e; throw e;}"
+        "}"
+    );
+
+    evaluateStrict(m_engine,
+        "_copyqFnWrapper = function(fn, hasByteArrayReturnType) {"
+        "return function() {"
+        "_copyqArguments = arguments;"
+        "var v = fn();"
+        "delete _copyqArguments;"
+        "if (_copyqHasUncaughtException) throw _copyqUncaughtException;"
+        "return hasByteArrayReturnType ? ByteArray(v) : v;"
+        "}"
         "}"
     );
 
