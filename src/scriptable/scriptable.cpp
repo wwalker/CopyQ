@@ -594,12 +594,11 @@ void installObject(QObject *fromObj, const QString &toName, QJSEngine *engine)
                         .arg(name, fromName, toName, hasByteArrayReturnType ? "true" : "false") );
         } else {
             const QMetaProperty prop = metaObject->property(i);
-            script.append( QString("Object.defineProperty(%2, '%1', {").arg(name, toName) );
-            if ( prop.isReadable() )
-                script.append( QString("get: function(){return %2.%1;},").arg(name, fromName) );
-            if ( prop.isWritable() )
-                script.append( QString("set: function(arg){%2.%1 = arg},").arg(name, fromName) );
-            script.append( QString("});\n") );
+            script.append(
+                QString("_copyqCreateProperty('%1', %2, %3, %4, %5);\n")
+                        .arg(name, fromName, toName,
+                             prop.isReadable() ? "true" : "false",
+                             prop.isWritable() ? "true" : "false") );
         }
     }
     evaluateStrict(engine, script);
@@ -643,6 +642,14 @@ Scriptable::Scriptable(
         "if (_copyqHasUncaughtException) throw _copyqUncaughtException;"
         "return hasByteArrayReturnType ? ByteArray(v) : v;"
         "}"
+        "}"
+    );
+    evaluateStrict(m_engine,
+        "_copyqCreateProperty = function(name, from, to, isReadable, isWritable) {"
+        "var property = {};"
+        "if (isReadable) property['get'] = function(){return from[name];};"
+        "if (isWritable) property['set'] = function(arg){from[name] = arg};"
+        "Object.defineProperty(to, name, property);"
         "}"
     );
 
